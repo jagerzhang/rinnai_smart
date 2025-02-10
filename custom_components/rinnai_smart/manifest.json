@@ -1,0 +1,16 @@
+{
+  "domain": "rinnai",
+  "name": "Rinnai Smart",
+  "codeowners": [
+    "@catro"
+  ],
+  "config_flow": true,
+  "dependencies": [],
+  "documentation": "https://github.com/catro/rinnai_smart",
+  "homekit": {},
+  "iot_class": "cloud_push",
+  "requirements": ["aiomqtt>=2.0.0"],
+  "version": "0.0.1",
+  "ssdp": [],
+  "zeroconf": []
+}
