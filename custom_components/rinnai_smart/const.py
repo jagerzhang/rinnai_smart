@@ -18,12 +18,11 @@ MAX_TEMP = 60
 OPERATION_MAP = {
     # "0":  "关机",
     "A0":  "普通模式",
-    "C1":  "厨房模式",
-    "C2":  "低温模式",
-    "D0":  "淋浴模式",
+    "81":  "厨房模式",
+    "82":  "低温模式",
+    "90":  "淋浴模式",
     "84":  "浴缸模式",
     "88":  "水温按摩模式",
-    "E0":  "循环模式"
 }
 
 OPERATION_COMMAND_MAP = {
@@ -33,7 +32,6 @@ OPERATION_COMMAND_MAP = {
     "淋浴模式": "showerMode",
     "浴缸模式": "bathModeConfirm",
     "水温按摩模式": "massageMode",
-    # "循环模式": "cycleModeSetting"
 }
 
 CYCLE_MODE_MAP = {"0": "标准", "1": "舒适", "2": "节能"}

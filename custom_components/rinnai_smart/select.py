@@ -29,7 +29,7 @@ class RinnaiSelect(RinnaiEntity, SelectEntity):
         if self._select_dict["entity_type"] == "cycle_mode":
             return self._device.cycle_mode
         elif self._select_dict["entity_type"] == "operation_mode":
-            return OPERATION_MAP.get(self._device.operation_mode)
+            return self._device.operation_mode
 
     @property
     def options(self):

@@ -5,7 +5,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
 from .const import (
-    DOMAIN, LOGGER, MANUFACTURER, OPERATION_COMMAND_MAP, CYCLE_MODE_MAP, CYCLE_MODE_COMMAND_MAP
+    DOMAIN, LOGGER, MANUFACTURER, OPERATION_COMMAND_MAP, CYCLE_MODE_MAP, CYCLE_MODE_COMMAND_MAP, OPERATION_MAP
 )
 from .rinnai_client import RinnaiClient
 
@@ -56,7 +56,9 @@ class RinnaiDeviceDataUpdateCoordinator(DataUpdateCoordinator):
 
     @property
     def operation_mode(self) -> str:
-        return self._device_information["operationMode"]
+        data = int(self._device_information["operationMode"], 16)
+        data &= 0xBF
+        return OPERATION_MAP.get("%02X" % data)
 
     @property
     def is_heating(self) -> bool:

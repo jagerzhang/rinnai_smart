@@ -45,7 +45,7 @@ class RinnaiWaterHeater(RinnaiEntity, WaterHeaterEntity):
     @property
     def current_operation(self):
         """Return current operation"""
-        return OPERATION_MAP.get(self._device.operation_mode)
+        return self._device.operation_mode
 
     @property
     def icon(self):
