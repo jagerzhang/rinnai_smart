@@ -1,8 +1,4 @@
 {
     "name": "Rinnai Smart Water Heater",
-    "domains": [
-        "water_heater"
-    ],
-    "content_in_root": false,
-    "iot_class": "cloud_push"
+    "content_in_root": false
 }
