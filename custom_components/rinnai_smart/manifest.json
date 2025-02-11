@@ -11,6 +11,7 @@
   "iot_class": "cloud_push",
   "requirements": ["aiomqtt>=2.0.0"],
   "version": "0.0.1",
+  "issue_tracker": "https://github.com/catro/rinnai_smart/issues",
   "ssdp": [],
   "zeroconf": []
 }
