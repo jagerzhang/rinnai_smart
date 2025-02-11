@@ -44,7 +44,7 @@ Please make sure to use one of the official release branches when installing usi
 > If installing manually, in order to be alerted about new releases, you will need to subscribe to releases from this repository.
 
 # Setup
-[![Open your Home Assistant instance and start setting up a new integration.](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=rinnai_smart)
+[![Open your Home Assistant instance and start setting up a new integration.](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=rinnai)
 
 > [!Tip]
 > If you are unable to use the button above, follow the steps below:
