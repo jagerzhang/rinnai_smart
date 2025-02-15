@@ -3,10 +3,10 @@ import logging
 import aiohttp
 import backoff
 import asyncio
-import uuid
 import ssl
 import json
 import aiomqtt
+import datetime
 
 LOGGER = logging.getLogger(__package__)
 
@@ -89,20 +89,25 @@ class MQTTClient:
     async def run(self, ssl_context=None):
         if ssl_context is None:
             ssl_context = ssl.create_default_context()
-        async with aiomqtt.Client(
-            "mqtt.rinnai.com.cn",
-            8883,
-            identifier=str(uuid.uuid4())[:8],
-            username=self._username,
-            password=self._password,
-            tls_context=ssl_context,
-            tls_insecure=True,
-        ) as client:
-            self._client = client
-            async for message in client.messages:
-                await self._on_message(
-                    message.topic.value, message.payload.decode("utf-8")
-                )
+        ts = datetime.datetime.now()
+        try:
+            async with aiomqtt.Client(
+                "mqtt.rinnai.com.cn",
+                8883,
+                identifier=f"{self._username}:{ts.second}{ts.microsecond}",
+                username=self._username,
+                password=self._password,
+                tls_context=ssl_context,
+                tls_insecure=True,
+            ) as client:
+                LOGGER.info(f"MQTT connected")
+                self._client = client
+                async for message in client.messages:
+                    await self._on_message(
+                        message.topic.value, message.payload.decode("utf-8")
+                    )
+        except aiomqtt.MqttError:
+            self._client = None
         LOGGER.error("MQTT task exit")
 
     async def subscribe(self, mac):
@@ -156,7 +161,17 @@ class RinnaiClient:
         await self._devices["on_update"](info)
 
     async def run(self, ssl_context=None):
-        await self._mqtt_client.run(ssl_context)
+        backoff = 1
+        max_backoff = 3600
+        now = datetime.datetime.now()
+        while True:
+            await self._mqtt_client.run(ssl_context)
+            if datetime.datetime.now() - now < datetime.timedelta(seconds=60):
+                backoff = backoff << 1
+                if backoff > max_backoff:
+                    backoff = max_backoff
+            LOGGER.warning(f"Reconnecting in {backoff} seconds")
+            await asyncio.sleep(backoff)
 
     async def subscribe(self, device_id: str, on_update):
         if device_id not in self._devices:
