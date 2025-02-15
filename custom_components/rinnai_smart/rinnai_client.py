@@ -86,7 +86,7 @@ class MQTTClient:
         self._on_message = on_message
         self._client = None
 
-    async def run(self, ssl_context=None):
+    async def run(self, ssl_context=None, subscribes=[]):
         if ssl_context is None:
             ssl_context = ssl.create_default_context()
         ts = datetime.datetime.now()
@@ -102,6 +102,8 @@ class MQTTClient:
             ) as client:
                 LOGGER.info(f"MQTT connected")
                 self._client = client
+                for mac in subscribes:
+                    await self.subscribe(mac)
                 async for message in client.messages:
                     await self._on_message(
                         message.topic.value, message.payload.decode("utf-8")
@@ -131,6 +133,7 @@ class RinnaiClient:
         self._http_client = HTTPClient(self._username, self._password)
         self._mqtt_client = MQTTClient(username, password, self._on_message)
         self._devices = {}
+        self._subscribes = {}
 
     async def login(self) -> bool:
         return await self._http_client.login()
@@ -158,28 +161,39 @@ class RinnaiClient:
         data = json.loads(payload)
         for item in data.get("enl", []):
             info[item["id"]] = item["data"]
-        await self._devices["on_update"](info)
+        on_update, _ = self._subscribes.get(device_id)
+        await on_update(info)
 
     async def run(self, ssl_context=None):
-        backoff = 1
-        max_backoff = 3600
+        BACKOFF_INIT = 10
+        MAX_BACKOFF = 3600
+        NEED_BACKOFF_SECONDS = datetime.timedelta(seconds=60)
+        backoff = BACKOFF_INIT
         now = datetime.datetime.now()
+        subscribes = []
         while True:
-            await self._mqtt_client.run(ssl_context)
-            if datetime.datetime.now() - now < datetime.timedelta(seconds=60):
+            await self._mqtt_client.run(ssl_context, subscribes)
+            if datetime.datetime.now() - now < NEED_BACKOFF_SECONDS:
+                self.get_devices()
                 backoff = backoff << 1
-                if backoff > max_backoff:
-                    backoff = max_backoff
+                if backoff > MAX_BACKOFF:
+                    backoff = MAX_BACKOFF
+            else:
+                backoff = BACKOFF_INIT
             LOGGER.warning(f"Reconnecting in {backoff} seconds")
             await asyncio.sleep(backoff)
+            subscribes = []
+            for _, (_, mac) in self._subscribes.items():
+                subscribes.append(mac)
 
     async def subscribe(self, device_id: str, on_update):
         if device_id not in self._devices:
             LOGGER.error(f"Unknown device_id: {device_id}")
             return False
-        self._devices["on_update"] = on_update
+        mac = self._devices[device_id]["device"]["mac"]
+        self._subscribes[device_id] = (on_update, mac)
         await on_update(self._devices[device_id]["info"])
-        await self._mqtt_client.subscribe(self._devices[device_id]["device"]["mac"])
+        await self._mqtt_client.subscribe(mac)
 
     async def publish(self, device: dict, command_id, command_data):
         payload = {
@@ -209,7 +223,7 @@ async def main():
     # client = MQTTClient("<USERNAME>", "<PASSWORD>", on_message)
     # task = asyncio.create_task(client.run())
     # await client.subscribe("<MAC>")
-    await asyncio.sleep(60)
+    await asyncio.sleep(600)
     task.cancel()
 
     """
