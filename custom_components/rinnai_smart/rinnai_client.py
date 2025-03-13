@@ -113,7 +113,7 @@ class MQTTClient:
         LOGGER.error("MQTT task exit")
 
     async def subscribe(self, mac):
-        topic = f"rinnai/SR/01/SR/{mac}/res/"
+        topic = f"rinnai/SR/01/SR/{mac}/+/"
         while self._client is None:
             await asyncio.sleep(1)
         await self._client.subscribe(topic)
@@ -159,6 +159,8 @@ class RinnaiClient:
             return
         info = self._devices[key]["info"]
         data = json.loads(payload)
+        if data.get("ptn", "") != "J00":
+            return
         for item in data.get("enl", []):
             info[item["id"]] = item["data"]
         on_update, _ = self._subscribes.get(device_id)
