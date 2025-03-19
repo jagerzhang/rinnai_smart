@@ -105,9 +105,12 @@ class MQTTClient:
                 for mac in subscribes:
                     await self.subscribe(mac)
                 async for message in client.messages:
-                    await self._on_message(
-                        message.topic.value, message.payload.decode("utf-8")
-                    )
+                    try:
+                        await self._on_message(
+                            message.topic.value, message.payload.decode("utf-8")
+                        )
+                    except Exception as e:
+                        LOGGER.error(f"Error on message: {message.payload}")
         except aiomqtt.MqttError:
             self._client = None
         LOGGER.error("MQTT task exit")
