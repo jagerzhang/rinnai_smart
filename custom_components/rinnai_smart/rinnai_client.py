@@ -177,9 +177,13 @@ class RinnaiClient:
         now = datetime.datetime.now()
         subscribes = []
         while True:
-            await self._mqtt_client.run(ssl_context, subscribes)
+            try:
+                LOGGER.info("Trying to connect to MQTT server...")
+                await self._mqtt_client.run(ssl_context, subscribes)
+            except Exception as e:
+                LOGGER.error(f"MQTT connection error: {e}")
             if datetime.datetime.now() - now < NEED_BACKOFF_SECONDS:
-                self.get_devices()
+                await self.get_devices()
                 backoff = backoff << 1
                 if backoff > MAX_BACKOFF:
                     backoff = MAX_BACKOFF
