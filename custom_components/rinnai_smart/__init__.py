@@ -38,7 +38,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     hass.data[DOMAIN][entry.entry_id][CLIENT] = client = RinnaiClient(entry.data[CONF_USERNAME], entry.data[CONF_PASSWORD])
     devices = await client.get_devices()
-    hass.async_create_task(client.run(ssl_util.client_context()))
+    hass.loop.create_task(client.run(ssl_util.client_context()))
 
     hass.data[DOMAIN][entry.entry_id]["devices"] = devices = [
         RinnaiDeviceDataUpdateCoordinator(hass, client, value["device"], entry.options)
