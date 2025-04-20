@@ -7,7 +7,9 @@ import ssl
 import json
 import aiomqtt
 import datetime
+import re
 
+logging.basicConfig(level=logging.DEBUG)
 LOGGER = logging.getLogger(__package__)
 
 class HTTPClient:
@@ -145,29 +147,51 @@ class RinnaiClient:
         self._devices = await self._http_client.get_devices()
         return self._devices
 
+    import re
+
     async def _on_message(self, topic, payload):
         LOGGER.info(f"[RX]: {payload}")
-        tokens: list = topic.split("/")
-        if len(tokens) < 5:
-            LOGGER.warning("Topic unknown")
-            return
-        mac = tokens[4]
-        device_id = None
-        for key, value in self._devices.items():
-            if value["device"]["mac"] == mac:
-                device_id = key
-                break
-        if device_id is None:
-            LOGGER.warning("Device ID not found")
-            return
-        info = self._devices[key]["info"]
-        data = json.loads(payload)
-        if data.get("ptn", "") != "J00":
-            return
-        for item in data.get("enl", []):
-            info[item["id"]] = item["data"]
-        on_update, _ = self._subscribes.get(device_id)
-        await on_update(info)
+        payload_str = None
+        try:
+            tokens = topic.split("/")
+            if len(tokens) < 5:
+                LOGGER.warning("Topic unknown")
+                return
+            mac = tokens[4]
+            device_id = None
+            for key, value in self._devices.items():
+                if "device" in value and "mac" in value["device"] and value["device"]["mac"] == mac:
+                    device_id = key
+                    break
+            if device_id is None:
+                LOGGER.warning("Device ID not found")
+                return
+            info = self._devices[key]["info"]
+
+            if isinstance(payload, bytes):
+                payload_str = payload.decode('utf-8')
+            else:
+                payload_str = str(payload)
+            payload_str = re.sub(r',\s*([}\]])', r'\1', payload_str)
+            data = json.loads(payload_str)
+
+            if data.get("ptn", "") != "J00":
+                return
+            if "enl" in data:
+                for item in data["enl"]:
+                    if "id" in item and "data" in item:
+                        info[item["id"]] = item["data"]
+
+            on_update, _ = self._subscribes.get(device_id)
+            if on_update:
+                await on_update(info)
+        except UnicodeDecodeError as e:
+            LOGGER.error(f"Error decoding message: {e}, original message: {payload}")
+        except json.JSONDecodeError as e:
+            LOGGER.error(f"Error parsing JSON: {e}, original message: {payload_str}")
+        except Exception as e:
+            LOGGER.error(
+                f"Unexpected error in _on_message: {e}, original message: {payload_str if payload_str else payload}")
 
     async def run(self, ssl_context=None):
         BACKOFF_INIT = 10
