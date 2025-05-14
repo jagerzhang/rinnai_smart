@@ -74,11 +74,11 @@ class RinnaiDeviceDataUpdateCoordinator(DataUpdateCoordinator):
     
     @property
     def is_cycle_reservation_on(self) -> bool:
-        return self._device_information["cycleReservationSetting"] == "1"
+        return self._device_information["cycleReservationSetting1"] == "1"
     
     @property
     def is_temporary_cycle_insulation_on(self) -> bool:
-        return self._device_information["temporaryCycleInsulationSetting"] == "1"
+        return self._device_information["temporaryCycleInsulationSetting"] == "31"
     
     @property
     def is_burn_state_on(self) -> bool:
@@ -88,6 +88,8 @@ class RinnaiDeviceDataUpdateCoordinator(DataUpdateCoordinator):
     def cycle_reservation_time(self) -> str:
         hours = []
         hour = 0
+        print(self._device_information)
+        return ""
         for hex_str in self._device_information["cycleReservationTimeSetting"].split():
             hex_value = int(hex_str, 16)
             for i in range(8):
@@ -121,16 +123,16 @@ class RinnaiDeviceDataUpdateCoordinator(DataUpdateCoordinator):
         await self._client.publish(self._device, "cycleModeSetting", CYCLE_MODE_COMMAND_MAP[cycle_mode])
 
     async def async_turn_on_cycle_reservation(self):
-        await self._client.publish(self._device, "cycleReservationSetting", "01")
+        await self._client.publish(self._device, "cycleReservationSetting1", "01")
 
     async def async_turn_off_cycle_reservation(self):
-        await self._client.publish(self._device, "cycleReservationSetting", "00")
+        await self._client.publish(self._device, "cycleReservationSetting1", "00")
 
     async def async_turn_on_temporary_cycle_insulation(self):
-        await self._client.publish(self._device, "temporaryCycleInsulationSetting", "01")
+        await self._client.publish(self._device, "temporaryCycleInsulationSetting", "31")
 
     async def async_turn_off_temporary_cycle_insulation(self):
-        await self._client.publish(self._device, "temporaryCycleInsulationSetting", "00")
+        await self._client.publish(self._device, "temporaryCycleInsulationSetting", "30")
 
     async def async_set_cycle_reservation_time(self, value: str):
         hours = [0, 0, 0]
